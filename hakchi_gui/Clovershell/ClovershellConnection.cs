@@ -263,7 +263,7 @@ namespace com.clusterrr.clovershell
                             lastAliveTime = DateTime.Now;
                             online = true;
                             OnConnected(this);
-                            while (device.UsbRegistryInfo.IsAlive)
+                            while (device != null && device.UsbRegistryInfo != null && device.UsbRegistryInfo.IsAlive)
                             {
                                 Thread.Sleep(100);
                                 if ((IdleTime.TotalSeconds >= 10) && (Ping() < 0))
