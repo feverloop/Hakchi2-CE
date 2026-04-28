@@ -253,6 +253,10 @@ namespace com.clusterrr.clovershell
                             var body = new byte[65536];
                             int len;
                             while (epReader.Read(body, 50, out len) == ErrorCode.Ok) ;
+                            // On Linux/Mono the OUT endpoint stops ACKing packets after killAll().
+                            // Clear any halt state on both endpoints to recover.
+                            epWriter.Reset();
+                            epReader.Reset();
                             epReader.ReadBufferSize = 65536;
                             epReader.DataReceived += epReader_DataReceived;
                             //epReader.ReadThreadPriority = ThreadPriority.AboveNormal;
