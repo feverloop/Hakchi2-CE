@@ -253,9 +253,18 @@ namespace com.clusterrr.clovershell
                             var body = new byte[65536];
                             int len;
                             while (epReader.Read(body, 50, out len) == ErrorCode.Ok) ;
-                            // On Linux/Mono the OUT endpoint stalls after killAll().
-                            // Clear halt on OUT to recover; IN endpoint is not stalled.
-                            epWriter.Reset();
+                            // On Linux/Mono both endpoints stall after killAll().
+                            // Release and re-claim the interface for a full endpoint reset.
+                            if (!ReferenceEquals(wholeUsbDevice, null))
+                            {
+                                epReader.Dispose();
+                                epWriter.Dispose();
+                                wholeUsbDevice.ReleaseInterface(0);
+                                Thread.Sleep(200);
+                                wholeUsbDevice.ClaimInterface(0);
+                                epReader = device.OpenEndpointReader((ReadEndpointID)inEndp, 65536);
+                                epWriter = device.OpenEndpointWriter((WriteEndpointID)outEndp);
+                            }
                             epReader.ReadBufferSize = 65536;
                             epReader.DataReceived += epReader_DataReceived;
                             //epReader.ReadThreadPriority = ThreadPriority.AboveNormal;
