@@ -254,20 +254,11 @@ namespace com.clusterrr.clovershell
                             int len;
                             while (epReader.Read(body, 50, out len) == ErrorCode.Ok) ;
                             // On Linux/Mono the Allwinner gadget OUT endpoint stalls after killAll().
-                            // ReleaseInterface/ClaimInterface only resets host-side state — the device
-                            // gadget firmware doesn't respond to it. ResetDevice() sends a USB bus reset
-                            // which forces the device firmware to clear all endpoint state.
-                            if (!ReferenceEquals(wholeUsbDevice, null))
-                            {
-                                epReader.Dispose();
-                                epWriter.Dispose();
-                                wholeUsbDevice.ReleaseInterface(0);
-                                wholeUsbDevice.ResetDevice();
-                                Thread.Sleep(500);
-                                wholeUsbDevice.ClaimInterface(0);
-                                epReader = device.OpenEndpointReader((ReadEndpointID)inEndp, 65536);
-                                epWriter = device.OpenEndpointWriter((WriteEndpointID)outEndp);
-                            }
+                            // CLEAR_FEATURE(ENDPOINT_HALT) on both endpoints clears the device-side stall.
+                            // epWriter.Reset() unblocks OUT; epReader.Reset() is required — without it
+                            // the OUT reset alone does not recover (tested in commit 67aec56).
+                            epWriter.Reset();
+                            epReader.Reset();
                             epReader.ReadBufferSize = 65536;
                             epReader.DataReceived += epReader_DataReceived;
                             //epReader.ReadThreadPriority = ThreadPriority.AboveNormal;
