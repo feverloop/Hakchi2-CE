@@ -248,17 +248,18 @@ namespace com.clusterrr.clovershell
                             epReader = device.OpenEndpointReader((ReadEndpointID)inEndp, 65536);
                             epWriter = device.OpenEndpointWriter((WriteEndpointID)outEndp);
                             Trace.WriteLine("clovershell connected");
-                            // Kill all other sessions and drop all output
-                            killAll();
-                            var body = new byte[65536];
-                            int len;
-                            while (epReader.Read(body, 50, out len) == ErrorCode.Ok) ;
-                            // On Linux/Mono the Allwinner gadget OUT endpoint stalls after killAll().
-                            // CLEAR_FEATURE(ENDPOINT_HALT) on both endpoints clears the device-side stall.
-                            // epWriter.Reset() unblocks OUT; epReader.Reset() is required — without it
-                            // the OUT reset alone does not recover (tested in commit 67aec56).
-                            epWriter.Reset();
-                            epReader.Reset();
+                            // On Linux/Mono (wholeUsbDevice != null), killAll() wedges the Allwinner
+                            // gadget OUT endpoint permanently — no host-side recovery works (confirmed
+                            // via libusb traces across ReleaseInterface, CLEAR_FEATURE, and ResetDevice
+                            // attempts). Skip killAll on Linux; stale sessions are unlikely since Linux
+                            // connections have not worked before this fix.
+                            if (ReferenceEquals(wholeUsbDevice, null))
+                            {
+                                killAll();
+                                var body = new byte[65536];
+                                int len;
+                                while (epReader.Read(body, 50, out len) == ErrorCode.Ok) ;
+                            }
                             epReader.ReadBufferSize = 65536;
                             epReader.DataReceived += epReader_DataReceived;
                             //epReader.ReadThreadPriority = ThreadPriority.AboveNormal;
