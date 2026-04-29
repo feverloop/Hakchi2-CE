@@ -664,19 +664,7 @@ namespace com.clusterrr.clovershell
                 try
                 {
                     pendingExecConnections.Add(c);
-                    // The Allwinner USB gadget is half-duplex: a pending IN URB blocks OUT writes on
-                    // Linux/libusb. Disable the async reader so no IN URB is outstanding during the
-                    // write, then re-enable immediately so CMD_EXEC_NEW_RESP can be received.
-                    bool asyncWasEnabled = epReader != null && epReader.DataReceivedEnabled;
-                    if (asyncWasEnabled) epReader.DataReceivedEnabled = false;
-                    try
-                    {
-                        writeUsb(ClovershellCommand.CMD_EXEC_NEW_REQ, 0, Encoding.UTF8.GetBytes(command));
-                    }
-                    finally
-                    {
-                        if (asyncWasEnabled && epReader != null) epReader.DataReceivedEnabled = true;
-                    }
+                    writeUsb(ClovershellCommand.CMD_EXEC_NEW_REQ, 0, Encoding.UTF8.GetBytes(command));
                     int t = 0;
                     while (c.id < 0)
                     {
